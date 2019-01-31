@@ -1073,7 +1073,8 @@ Params:
 void move(T)(ref T source, ref T target)
 if (__traits(compiles, target = T.init))
 {
-    moveImpl(target, source);
+    import core.lifetime : coreMove = move;
+    return coreMove(source, target);
 }
 
 /// ditto
@@ -1210,7 +1211,8 @@ pure nothrow @safe @nogc unittest
 /// Ditto
 T move(T)(return scope ref T source)
 {
-    return moveImpl(source);
+    import core.lifetime : coreMove = move;
+    return coreMove(source);
 }
 
 /// Non-copyable structs can still be moved:
@@ -1263,38 +1265,6 @@ pure nothrow @safe @nogc unittest
     alias T = void function() @system nothrow;
     static assert(is(typeof({ S s; move(s); }) == T));
     static assert(is(typeof({ S s; move(s, s); }) == T));
-}
-
-private void moveImpl(T)(ref scope T target, ref return scope T source)
-{
-    import std.traits : hasElaborateDestructor;
-
-    static if (is(T == struct))
-    {
-        //  Unsafe when compiling without -dip1000
-        if ((() @trusted => &source == &target)()) return;
-
-        // Destroy target before overwriting it
-        static if (hasElaborateDestructor!T) target.__xdtor();
-    }
-    // move and emplace source into target
-    moveEmplaceImpl(target, source);
-}
-
-private T moveImpl(T)(ref return scope T source)
-{
-    // Properly infer safety from moveEmplaceImpl as the implementation below
-    // might void-initialize pointers in result and hence needs to be @trusted
-    if (false) moveEmplaceImpl(source, source);
-
-    return trustedMoveImpl(source);
-}
-
-private T trustedMoveImpl(T)(ref return scope T source) @trusted
-{
-    T result = void;
-    moveEmplaceImpl(result, source);
-    return result;
 }
 
 @safe unittest
@@ -1504,7 +1474,8 @@ private void moveEmplaceImpl(T)(ref scope T target, ref return scope T source)
  */
 void moveEmplace(T)(ref T source, ref T target) pure @system
 {
-    moveEmplaceImpl(target, source);
+    import core.lifetime : moveEmplace;
+    moveEmplace(source, target);
 }
 
 ///
