@@ -3151,13 +3151,6 @@ if (isBlitAssignable!T && !is(typeof(lhs.proxySwap(rhs))))
     }();
 }
 
-/// ditto
-void swap(T)(ref T lhs, ref T rhs)
-if (is(typeof(lhs.proxySwap(rhs))))
-{
-    lhs.proxySwap(rhs);
-}
-
 /**
 Swaps two elements in-place of a range `r`,
 specified by their indices `i1` and `i2`.
