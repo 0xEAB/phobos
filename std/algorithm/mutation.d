@@ -1081,9 +1081,10 @@ if (__traits(compiles, target = T.init))
 template move(T)
 if (!__traits(compiles, imported!"std.traits".lvalueOf!T = T.init))
 {
+    import core.lifetime : coreMove = move;
     ///
     deprecated("Can't move into `target` as `" ~ T.stringof ~ "` can't be assigned")
-    void move(ref T source, ref T target) => moveImpl(target, source);
+    void move(ref T source, ref T target) => coreMove(target, source);
 }
 
 /// For non-struct types, `move` just performs `target = source`:
@@ -1211,8 +1212,21 @@ pure nothrow @safe @nogc unittest
 /// Ditto
 T move(T)(return scope ref T source)
 {
-    import core.lifetime : coreMove = move;
-    return coreMove(source);
+    // This procedure needs to be run through our emulation layer
+    // because `core.lifetime` lacks a certain assert that other code relies on.
+
+    // Properly infer safety from moveEmplaceImpl as the implementation below
+    // might void-initialize pointers in result and hence needs to be @trusted
+    if (false) moveEmplaceImpl(source, source);
+
+    static T2 trustedMoveImpl(T2)(return scope ref T2 source) @trusted
+    {
+        T2 result = void;
+        moveEmplaceImpl(result, source);
+        return result;
+    }
+
+    return trustedMoveImpl!T(source);
 }
 
 /// Non-copyable structs can still be moved:
@@ -1406,14 +1420,23 @@ pure nothrow @safe @nogc unittest
     move(x, x);
 }
 
-private void moveEmplaceImpl(T)(ref scope T target, ref return scope T source)
+// emulation layer
+// beware: swapped arguments because of DIP1000 shenanigans
+private void moveEmplaceImpl(T)(scope ref T target, return scope ref T source)
 {
-    import core.stdc.string : memcpy, memset;
-    import std.traits : hasAliasing, hasElaborateAssign,
-                        hasElaborateCopyConstructor, hasElaborateDestructor,
-                        hasElaborateMove,
-                        isAssignable, isStaticArray;
+    import core.lifetime : _moveEmplaceImpl;
+    import std.traits : hasAliasing, hasElaborateMove;
 
+    /*
+        This check is absent from the druntime implementation.
+
+        Unfortunately, when the corresponding patch got pulled,
+        all it provided was the excuse that “this assert pulls in half of phobos”.
+
+        Leaving it out might have been good enough for druntime standards,
+        but doing so breaks existing code.
+        For Phobos we sure can do better than that.
+     */
     static if (!is(T == class) && hasAliasing!T) if (!__ctfe)
     {
         import std.exception : doesPointTo;
@@ -1421,46 +1444,8 @@ private void moveEmplaceImpl(T)(ref scope T target, ref return scope T source)
             "Cannot move object of type " ~ T.stringof ~ " with internal pointer unless `opPostMove` is defined.");
     }
 
-    static if (is(T == struct))
-    {
-        //  Unsafe when compiling without -dip1000
-        assert((() @trusted => &source !is &target)(), "source and target must not be identical");
-
-        static if (hasElaborateAssign!T || !isAssignable!T)
-            () @trusted { memcpy(&target, &source, T.sizeof); }();
-        else
-            target = source;
-
-        static if (hasElaborateMove!T)
-            __move_post_blt(target, source);
-
-        // If the source defines a destructor or a postblit hook, we must obliterate the
-        // object in order to avoid double freeing and undue aliasing
-        static if (hasElaborateDestructor!T || hasElaborateCopyConstructor!T)
-        {
-            // If T is nested struct, keep original context pointer
-            static if (__traits(isNested, T))
-                enum sz = T.sizeof - (void*).sizeof;
-            else
-                enum sz = T.sizeof;
-
-            static if (__traits(isZeroInit, T))
-                () @trusted { memset(&source, 0, sz); }();
-            else
-                () @trusted { memcpy(&source, __traits(initSymbol, T).ptr, sz); }();
-        }
-    }
-    else static if (isStaticArray!T)
-    {
-        for (size_t i = 0; i < source.length; ++i)
-            move(source[i], target[i]);
-    }
-    else
-    {
-        // Primitive data (including pointers and arrays) or class -
-        // assignment works great
-        target = source;
-    }
+    // Beware, druntime swapped arguments to accomodate for our “friend” DIP1000:
+    return _moveEmplaceImpl(target, source);
 }
 
 /**
@@ -1472,11 +1457,7 @@ private void moveEmplaceImpl(T)(ref scope T target, ref return scope T source)
  *   source = value to be moved into target
  *   target = uninitialized value to be filled by source
  */
-void moveEmplace(T)(ref T source, ref T target) pure @system
-{
-    import core.lifetime : moveEmplace;
-    moveEmplace(source, target);
-}
+void moveEmplace(T)(ref T source, ref T target) @system => moveEmplaceImpl(target, source);
 
 ///
 pure nothrow @nogc @system unittest
@@ -1618,7 +1599,11 @@ private InputRange2 moveAllImpl(alias moveOp, InputRange1, InputRange2)(
         auto toMove = src.length;
         assert(toMove <= tgt.length, "Source buffer needs to be smaller or equal to the target buffer.");
         foreach (idx; 0 .. toMove)
+        {
+            if (src[idx] is tgt[idx])
+                continue;
             moveOp(src[idx], tgt[idx]);
+        }
         return tgt[toMove .. tgt.length];
     }
     else
@@ -1626,6 +1611,8 @@ private InputRange2 moveAllImpl(alias moveOp, InputRange1, InputRange2)(
         for (; !src.empty; src.popFront(), tgt.popFront())
         {
             assert(!tgt.empty, "Source buffer needs to be smaller or equal to the target buffer.");
+            if (src.front is tgt.front)
+                continue;
             moveOp(src.front, tgt.front);
         }
         return tgt;
