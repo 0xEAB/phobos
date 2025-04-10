@@ -1772,24 +1772,6 @@ else
     }
 }
 
-version (linux)
-{
-    // `getrandom()` was introduced in Linux 3.17.
-
-    // Shim for missing bindings in druntime
-    version (none)
-        import core.sys.linux.sys.random : getrandom;
-    else
-    {
-        import core.sys.posix.sys.types : ssize_t;
-        extern extern(C) ssize_t getrandom(
-            void* buf,
-            size_t buflen,
-            uint flags,
-        ) @system nothrow @nogc;
-    }
-}
-
 version (Windows)
 {
     pragma(lib, "Bcrypt.lib");
@@ -1853,20 +1835,11 @@ how excellent the source of entropy is.
 {
     version (linux)
     {
+        import std.internal.entropy.entropy : crashOnError, EntropySource, getEntropy;
+
         uint buffer;
-
-        /*
-            getrandom(2):
-            If the _urandom_ source has been initialized, reads of up to
-            256 bytes will always return as many bytes as requested and
-            will not be interrupted by signals. No such guarantees apply
-            for larger buffer sizes.
-            */
-        static assert(buffer.sizeof <= 256);
-
-        const status = (() @trusted => getrandom(&buffer, buffer.sizeof, 0))();
-        assert(status == buffer.sizeof);
-
+        const status = (() @trusted => getEntropy(&buffer, buffer.sizeof, EntropySource.tryAll))();
+        crashOnError(status);
         return buffer;
     }
     else version (Windows)
@@ -1932,20 +1905,11 @@ if (isUnsigned!UIntType)
         {
             version (linux)
             {
+                import std.internal.entropy.entropy : crashOnError, EntropySource, getEntropy;
+
                 UIntType buffer;
-
-                /*
-                    getrandom(2):
-                    If the _urandom_ source has been initialized, reads of up to
-                    256 bytes will always return as many bytes as requested and
-                    will not be interrupted by signals. No such guarantees apply
-                    for larger buffer sizes.
-                 */
-                static assert(buffer.sizeof <= 256);
-
-                const status = (() @trusted => getrandom(&buffer, buffer.sizeof, 0))();
-                assert(status == buffer.sizeof);
-
+                const status = (() @trusted => getEntropy(&buffer, buffer.sizeof, EntropySource.tryAll))();
+                crashOnError(status);
                 return buffer;
             }
             else version (Windows)
