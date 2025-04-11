@@ -1875,7 +1875,7 @@ if (isUnsigned!UIntType)
         /// ditto
         @property UIntType unpredictableSeed() @nogc nothrow @trusted
         {
-            version (linux)
+            version (SeedUseGetEntropy)
             {
                 import std.internal.entropy.entropy : crashOnError, EntropySource, getEntropy;
 
@@ -1883,18 +1883,6 @@ if (isUnsigned!UIntType)
                 const status = (() @trusted => getEntropy(&buffer, buffer.sizeof, EntropySource.tryAll))();
                 crashOnError(status);
                 return buffer;
-            }
-            else version (Windows)
-            {
-                UIntType result;
-                if (!bcryptGenRandom!UIntType(result))
-                {
-                    version (none)
-                        return fallbackSeed();
-                    else
-                        assert(false, "BCryptGenRandom() failed.");
-                }
-                return result;
             }
             else version (AnyARC4Random)
             {
