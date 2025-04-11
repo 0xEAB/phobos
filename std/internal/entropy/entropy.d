@@ -16,6 +16,7 @@ public import std.internal.entropy.common;
 
 import std.internal.entropy.linux;
 import std.internal.entropy.posix;
+import std.internal.entropy.windows;
 import std.meta;
 
 version (linux):
@@ -151,6 +152,11 @@ else version (Posix) mixin entropyImpl!(
     EntropySource.charDevURandom,
     SrcFunPair!(EntropySource.charDevURandom, getEntropyViaCharDevURandom),
     SrcFunPair!(EntropySource.charDevRandom, getEntropyViaCharDevRandom),
+);
+else version (Windows) mixin entropyImpl!(
+    EntropySource.bcryptGenRandom,
+    SrcFunPair!(EntropySource.bcryptGenRandom, getEntropyViaBCryptGenRandom),
+    // TODO: SrcFunPair!(EntropySource.cryptGenRandom, getEntropyViaCryptGenRandom),
 );
 else mixin entropyImpl!(
     EntropySource.none,

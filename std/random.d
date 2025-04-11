@@ -1772,10 +1772,10 @@ else
     }
 }
 
+version (linux)
+    version = SeedUseGetEntropy;
 version (Windows)
-{
-    import std.internal.windows.bcrypt : bcryptGenRandom;
-}
+    version = SeedUseGetEntropy;
 
 /**
 A "good" seed for initializing random number engines. Initializing
@@ -1817,7 +1817,7 @@ how excellent the source of entropy is.
 */
 @property uint unpredictableSeed() @trusted nothrow @nogc
 {
-    version (linux)
+    version (SeedUseGetEntropy)
     {
         import std.internal.entropy.entropy : crashOnError, EntropySource, getEntropy;
 
@@ -1825,18 +1825,6 @@ how excellent the source of entropy is.
         const status = (() @trusted => getEntropy(&buffer, buffer.sizeof, EntropySource.tryAll))();
         crashOnError(status);
         return buffer;
-    }
-    else version (Windows)
-    {
-        uint result;
-        if (!bcryptGenRandom!uint(result))
-        {
-            version (none)
-                return fallbackSeed();
-            else
-                assert(false, "BCryptGenRandom() failed.");
-        }
-        return result;
     }
     else version (AnyARC4Random)
     {

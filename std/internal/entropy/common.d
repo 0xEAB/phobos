@@ -88,6 +88,15 @@ struct EntropyResult
             if (status == EntropyStatus.readError)
                 return "getEntropy(): Reading from `/dev/random` failed.";
         }
+        else if (source == EntropySource.bcryptGenRandom)
+        {
+            if (status == EntropyStatus.unavailableLibrary)
+                return "getEntropy(): `LoadLibraryA(\"Bcrypt.dll\")` failed.";
+            if (status == EntropyStatus.unavailable)
+                return "getEntropy(): `GetProcAddress(hBcrypt , \"BCryptGenRandom\")` failed.";
+            if (status == EntropyStatus.readError)
+                return "getEntropy(): `BCryptGenRandom()` failed.";
+        }
 
         // generic errors
         {
