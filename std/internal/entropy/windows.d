@@ -66,7 +66,7 @@ EntropyStatus loadBcrypt() @system
     import core.sys.windows.winbase : GetProcAddress, LoadLibraryA;
 
     if (hBcrypt !is null)
-        return;
+        return EntropyStatus.ok;
 
     hBcrypt = LoadLibraryA("Bcrypt.dll");
     if (!hBcrypt)
@@ -75,6 +75,8 @@ EntropyStatus loadBcrypt() @system
     ptrBCryptGenRandom = cast(typeof(ptrBCryptGenRandom)) GetProcAddress(hBcrypt , "BCryptGenRandom");
     if (!ptrBCryptGenRandom)
         return EntropyStatus.unavailable;
+
+    return EntropyStatus.ok;
 }
 
 // Will free `Bcrypt.dll`.
