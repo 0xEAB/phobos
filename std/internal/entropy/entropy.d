@@ -19,7 +19,21 @@ import std.internal.entropy.posix;
 import std.internal.entropy.windows;
 import std.meta;
 
-version (linux):
+@safe unittest
+{
+    auto buffer = new ubyte[](32);
+    forceEntropySource(defaultEntropySource);
+    const result = getEntropy(buffer);
+
+    assert(
+        !result.isUnavailable,
+        "The default entropy source for the target platform"
+        ~ " is unavailable on this machine. Please consider"
+        ~ " patching it to accommodate to your environment."
+    );
+    assert(result.isOK);
+}
+
 @nogc nothrow:
 
 // Flagship function
