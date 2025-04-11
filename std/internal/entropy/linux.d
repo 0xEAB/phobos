@@ -26,7 +26,7 @@ import std.internal.entropy.posix;
 
 package(std.internal.entropy):
 
-EntropyResult getEntropyViaGetrandom(void[] buffer)
+EntropyResult getEntropyViaGetrandom(scope void[] buffer)
 {
     const loaded = loadGetrandom();
     if (loaded != EntropyStatus.ok)
@@ -47,7 +47,7 @@ alias GetrandomFunction = extern(C) ssize_t function(
 static void* _getrandomLib = null;
 static GetrandomFunction _getrandomFun = null;
 
-EntropyStatus callGetrandom(void[] buffer)
+EntropyStatus callGetrandom(scope void[] buffer)
 {
     /+
         getrandom(2):

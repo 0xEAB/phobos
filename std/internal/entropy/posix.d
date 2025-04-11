@@ -24,13 +24,13 @@ import std.internal.entropy.common;
 
 package(std.internal.entropy):
 
-EntropyResult getEntropyViaCharDevURandom(void[] buffer) @system
+EntropyResult getEntropyViaCharDevURandom(scope void[] buffer) @system
 {
     const status = getEntropyViaCharDev(buffer, "/dev/urandom".ptr);
     return EntropyResult(status, EntropySource.charDevURandom);
 }
 
-EntropyResult getEntropyViaCharDevRandom(void[] buffer) @system
+EntropyResult getEntropyViaCharDevRandom(scope void[] buffer) @system
 {
     const status = getEntropyViaCharDev(buffer, "/dev/random".ptr);
     return EntropyResult(status, EntropySource.charDevRandom);
@@ -55,7 +55,7 @@ version (Posix) package(std.internal.entropy)
 
 private:
 
-EntropyStatus getEntropyViaCharDev(void[] buffer, const(char)* charDevName) @system
+EntropyStatus getEntropyViaCharDev(scope void[] buffer, const(char)* charDevName) @system
 {
     import core.stdc.stdio : fclose, fopen, fread;
 

@@ -37,19 +37,19 @@ import std.meta;
 @nogc nothrow:
 
 // Flagship function
-EntropyResult getEntropy(void[] buffer) @system
+EntropyResult getEntropy(scope void[] buffer) @system
 {
     return getEntropyImpl(buffer);
 }
 
 // Convenience overload
-EntropyResult getEntropy(ubyte[] buffer) @trusted
+EntropyResult getEntropy(scope ubyte[] buffer) @trusted
 {
     return getEntropy(cast(void[]) buffer);
 }
 
 // Convenience wrapper
-EntropyResult getEntropy(void* buffer, size_t length) @system
+EntropyResult getEntropy(scope void* buffer, size_t length) @system
 {
     return getEntropy(buffer[0 .. length]);
 }
@@ -68,7 +68,7 @@ void forceEntropySource(EntropySource source) @safe
     See_also:
         Use `forceEntropySource` instead.
  +/
-EntropyResult getEntropy(void* buffer, size_t length, EntropySource source) @system
+EntropyResult getEntropy(scope void* buffer, size_t length, EntropySource source) @system
 {
     const sourcePrevious = _entropySource;
     scope (exit) _entropySource = sourcePrevious;
@@ -111,7 +111,7 @@ if (allSatisfy!(isValidSupportedSource, SupportedSources))
 {
     enum defaultEntropySource = defaultSource;
 
-    EntropyResult getEntropyImpl(void[] buffer) @system
+    EntropyResult getEntropyImpl(scope void[] buffer) @system
     {
         switch (_entropySource)
         {
@@ -136,7 +136,7 @@ if (allSatisfy!(isValidSupportedSource, SupportedSources))
         }
     }
 
-    EntropyResult _tryEntropySources(void[] buffer) @system
+    EntropyResult _tryEntropySources(scope void[] buffer) @system
     {
         EntropyResult result;
 
@@ -186,7 +186,7 @@ void saveSourceForNextUse(const EntropyResult result) @safe
     _entropySource = result.source;
 }
 
-EntropyResult getEntropyViaNone(void[])
+EntropyResult getEntropyViaNone(scope void[])
 {
     return EntropyResult(EntropyStatus.unavailable, EntropySource.none);
 }

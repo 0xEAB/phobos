@@ -129,8 +129,6 @@ pragma(inline, true) bool isUnavailable(const EntropyResult value) pure @safe
 
 package(std.internal.entropy):
 
-alias GetEntropyFunction = EntropyResult function(void[] buffer) @system;
-
 struct VoidChunks
 {
     void[] _data;
