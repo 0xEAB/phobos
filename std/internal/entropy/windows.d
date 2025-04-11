@@ -27,7 +27,7 @@ import std.internal.entropy.common;
 
 package(std.internal.entropy):
 
-EntropyResult getEntropyViaBCryptGenRandom(scope void[] buffer) @system
+EntropyResult getEntropyViaBCryptGenRandom(scope void[] buffer) @trusted
 {
     const loaded = loadBcrypt();
     if (loaded != EntropyStatus.ok)

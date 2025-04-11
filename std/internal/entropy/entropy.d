@@ -37,13 +37,13 @@ import std.meta;
 @nogc nothrow:
 
 // Flagship function
-EntropyResult getEntropy(scope void[] buffer) @system
+EntropyResult getEntropy(scope void[] buffer) @safe
 {
     return getEntropyImpl(buffer);
 }
 
 // Convenience overload
-EntropyResult getEntropy(scope ubyte[] buffer) @trusted
+EntropyResult getEntropy(scope ubyte[] buffer) @safe
 {
     return getEntropy(cast(void[]) buffer);
 }
@@ -111,7 +111,7 @@ if (allSatisfy!(isValidSupportedSource, SupportedSources))
 {
     enum defaultEntropySource = defaultSource;
 
-    EntropyResult getEntropyImpl(scope void[] buffer) @system
+    EntropyResult getEntropyImpl(scope void[] buffer) @safe
     {
         switch (_entropySource)
         {
@@ -136,7 +136,7 @@ if (allSatisfy!(isValidSupportedSource, SupportedSources))
         }
     }
 
-    EntropyResult _tryEntropySources(scope void[] buffer) @system
+    EntropyResult _tryEntropySources(scope void[] buffer) @safe
     {
         EntropyResult result;
 
@@ -186,7 +186,7 @@ void saveSourceForNextUse(const EntropyResult result) @safe
     _entropySource = result.source;
 }
 
-EntropyResult getEntropyViaNone(scope void[])
+EntropyResult getEntropyViaNone(scope void[]) @safe
 {
     return EntropyResult(EntropyStatus.unavailable, EntropySource.none);
 }

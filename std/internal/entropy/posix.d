@@ -24,13 +24,13 @@ import std.internal.entropy.common;
 
 package(std.internal.entropy):
 
-EntropyResult getEntropyViaCharDevURandom(scope void[] buffer) @system
+EntropyResult getEntropyViaCharDevURandom(scope void[] buffer) @trusted
 {
     const status = getEntropyViaCharDev(buffer, "/dev/urandom".ptr);
     return EntropyResult(status, EntropySource.charDevURandom);
 }
 
-EntropyResult getEntropyViaCharDevRandom(scope void[] buffer) @system
+EntropyResult getEntropyViaCharDevRandom(scope void[] buffer) @trusted
 {
     const status = getEntropyViaCharDev(buffer, "/dev/random".ptr);
     return EntropyResult(status, EntropySource.charDevRandom);
