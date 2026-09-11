@@ -173,10 +173,6 @@ ifdef NO_AUTODECODE
 override DFLAGS += -version=NoAutodecodeStrings
 endif
 
-ifdef LINUX_LEGACY_EMULATE_GETRANDOM
-override DFLAGS += -version=linux_legacy_emulate_getrandom
-endif
-
 UDFLAGS=-unittest -version=StdUnittest
 
 LINKDL:=$(if $(findstring $(OS),linux),-L-ldl,)
